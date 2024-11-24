@@ -4,11 +4,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 import os
 
 class TrackWidget(QWidget):
-    clip_import_requested = pyqtSignal(int, str, int)
+    clip_import_requested = pyqtSignal(int, str)
     
     def __init__(self, track_id: int, engine, parent=None):
         super().__init__(parent)
+        track_id = track_id - 1
         self.track_id = track_id
+        print(f"Creating TrackWidget with ID: {track_id}")
         self.engine = engine
         self.setFixedHeight(80)
         
@@ -17,7 +19,8 @@ class TrackWidget(QWidget):
         layout.setSpacing(4)
         
         # Track name label
-        self.name_label = QLabel(f"Track {track_id + 1}")
+        display_number = track_id
+        self.name_label = QLabel(f"Track {display_number}")
         self.name_label.setStyleSheet("""
             QLabel {
                 color: #ddd;
@@ -74,11 +77,18 @@ class TrackWidget(QWidget):
         self.volume_slider.setToolTip(f"{value}%")
         
     def import_audio(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import Audio",
-            "", "Audio Files (*.wav *.mp3 *.ogg)"
-        )
-        if file_path:
-            self.name_label.setText(os.path.splitext(os.path.basename(file_path))[0])
-            # Default to start at frame 0
-            self.clip_import_requested.emit(self.track_id, file_path, 0)
+        try:
+            file_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Import Audio",
+                "",
+                "Audio Files (*.wav *.mp3 *.ogg)"
+            )
+            if file_path:
+                print(f"Emitting clip_import_requested for track {self.track_id}")
+                self.clip_import_requested.emit(self.track_id, file_path)
+                self.name_label.setText(os.path.splitext(os.path.basename(file_path))[0])
+                return True
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to import audio: {str(e)}")
+        return False

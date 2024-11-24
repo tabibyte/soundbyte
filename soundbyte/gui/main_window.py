@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SoundByte")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 800, 600)
         
         # Initialize core components
         self.undo_stack = []
@@ -136,6 +136,7 @@ class MainWindow(QMainWindow):
         sequencer_layout.setContentsMargins(0, 0, 0, 0)
         
         self.timeline = TimelineWidget()
+        self.timeline.set_engine(self.audio_engine)
         sequencer_layout.addWidget(self.timeline)
         
         # Add both panels to splitter
@@ -159,11 +160,32 @@ class MainWindow(QMainWindow):
         def connect_track_signals(track_widget):
             track_widget.clip_import_requested.connect(self.timeline.set_pending_clip)
     
-        def add_track(self):
-            track_id = len(self.tracks_layout)
-            track_widget = TrackWidget(track_id, self.audio_engine)
-            connect_track_signals(track_widget)
-            self.tracks_layout.addWidget(track_widget)
+    def add_track(self):
+        # Debug print current state
+        print("Current layout items before adding:")
+        for i in range(self.tracks_layout.count()):
+            widget = self.tracks_layout.itemAt(i).widget()
+            print(f"Item {i}: {type(widget).__name__}")
+
+        # Get number of actual tracks (excluding Add Track button and spacer)
+        existing_tracks = []
+        for i in range(self.tracks_layout.count()):
+            widget = self.tracks_layout.itemAt(i).widget()
+            if isinstance(widget, TrackWidget):
+                existing_tracks.append(widget)
+        
+        # Set track_id based on number of existing tracks
+        track_id = len(existing_tracks) - 1# Start from 1
+        print(f"Creating new track with ID: {track_id}")
+        
+        track_widget = TrackWidget(track_id, self.audio_engine)
+        track_widget.clip_import_requested.connect(self.timeline.set_pending_clip)
+        
+        # Insert at position 1 (after Add Track button)
+        self.tracks_layout.insertWidget(1, track_widget)
+        self.timeline.tracks.append(track_id)
+        
+        return track_id
         
     def create_menu_bar(self):
         """Create and setup the menu bar"""
